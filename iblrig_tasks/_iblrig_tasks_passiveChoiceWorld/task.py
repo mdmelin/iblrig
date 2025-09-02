@@ -26,6 +26,7 @@ class Session(ChoiceWorldSession):
         session_template_id=0,
         duration_spontaneous: int = DEFAULTS['SPONTANEOUS_ACTIVITY_SECONDS'],
         skip_event_replay: bool = DEFAULTS['SKIP_EVENT_REPLAY'],
+        num_stim_presentations: int = DEFAULTS['NUM_STIM_PRESENTATIONS'],
         **kwargs,
     ):
         self.extractor_tasks = ['PassiveRegisterRaw', 'PassiveTask']
@@ -37,6 +38,7 @@ class Session(ChoiceWorldSession):
         assert duration_spontaneous < 60 * 60 * 24
         self.task_params['SPONTANEOUS_ACTIVITY_SECONDS'] = duration_spontaneous
         self.task_params['SKIP_EVENT_REPLAY'] = skip_event_replay
+        self.task_params['NUM_STIM_PRESENTATIONS'] = num_stim_presentations
         if self.hardware_settings['MAIN_SYNC']:
             log.error('PassiveChoiceWorld extraction not supported for Bpod-only sessions!')
 
@@ -66,6 +68,14 @@ class Session(ChoiceWorldSession):
             action='store_true',
             dest='skip_event_replay',
             help='skip replay of events',
+        )
+        parser.add_argument(
+            '--num_stim_presentations',
+            option_strings=['--num_stim_presentations'],
+            dest='num_stim_presentations',
+            default=DEFAULTS['NUM_STIM_PRESENTATIONS'],
+            type=int,
+            help='the number of passive stimulus presentations (includes gabors, sounds, and valve)',
         )
         return parser
 
@@ -105,9 +115,10 @@ class Session(ChoiceWorldSession):
 
         if not self.is_mock:
             self.start_mixin_bonsai_visual_stimulus()
-        for trial_num, trial in self.trials_table.iterrows():
+        for trial_num in range(self.task_params['NUM_STIM_PRESENTATIONS']):
+            trial = self.trials_table.iloc[trial_num % len(self.trials_table)] # wrap back to beginning of trials table
             self.trial_num = trial_num
-            log.info(f'Delay: {trial.stim_delay}; ID: {trial.stim_type}; Count: {self.trial_num}/300')
+            log.info(f'Delay: {trial.stim_delay}; ID: {trial.stim_type}; Count: {self.trial_num}/{self.task_params["NUM_STIM_PRESENTATIONS"]}')
             sys.stdout.flush()
             time.sleep(trial.stim_delay)
             if trial.stim_type == 'V':
