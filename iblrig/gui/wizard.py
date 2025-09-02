@@ -832,7 +832,7 @@ class RigWizard(QMainWindow, Ui_wizard):
             label = param.replace('_', ' ').replace('--', '').title()
 
             # create widget for bool arguments
-            if isinstance(arg, argparse._StoreTrueAction | argparse._StoreFalseAction):
+            if isinstance(arg, argparse._StoreTrueAction | argparse._StoreFalseAction) or arg.type is bool:
                 widget = QCheckBox()
                 widget.setTristate(False)
                 if arg.default:
@@ -891,6 +891,7 @@ class RigWizard(QMainWindow, Ui_wizard):
                     widget.setDecimals(1)
                 else:
                     widget = QSpinBox()
+                widget.setMaximum(10_000)
                 if arg.default:
                     widget.setValue(arg.default)
                 widget.valueChanged.connect(lambda val, p=param: self._set_task_arg(p, str(val)))
@@ -899,7 +900,6 @@ class RigWizard(QMainWindow, Ui_wizard):
             # no other argument types supported for now
             else:
                 continue
-
             # add custom widget properties
             widget.setObjectName(param)
             widget.setProperty('parameter_name', param)

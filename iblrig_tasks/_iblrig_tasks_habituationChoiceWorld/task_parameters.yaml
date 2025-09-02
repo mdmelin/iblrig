@@ -1,4 +1,9 @@
+'DELAY_MINS': 0
 'CONTRAST_SET': [1.0]
 'DELAY_TO_STIM_CENTER': 10  # mean of normal dist with sd of 2
+'RANDOMIZE_DELAY': True
 'REWARD_AMOUNT_UL': 3.0
+'ITI_DELAY_SECS' : 0.5
+'ITI_SECS' : 1
+'STIM_CENTER_TIME_SECS' : .5
 'VISUAL_STIMULUS': GaborIBLTask/Gabor2D.bonsai  # null / passiveChoiceWorld_passive.bonsai

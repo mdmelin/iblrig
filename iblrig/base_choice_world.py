@@ -728,10 +728,15 @@ class HabituationChoiceWorldSession(ChoiceWorldSession):
 
     def draw_next_trial_info(self, *args, **kwargs):
         # update trial table fields specific to habituation choice world
-        self.trials_table.at[self.trial_num, 'delay_to_stim_center'] = np.random.normal(self.task_params.DELAY_TO_STIM_CENTER, 2)
+        if self.task_params.RANDOMIZE_DELAY:
+            delay = np.random.normal(self.task_params.DELAY_TO_STIM_CENTER, 2)
+        else:
+            delay = self.task_params.DELAY_TO_STIM_CENTER
+        self.trials_table.at[self.trial_num, 'delay_to_stim_center'] = delay
         super().draw_next_trial_info(*args, **kwargs)
 
     def get_state_machine_trial(self, i):
+        # TODO: if reward amount is zero then no reward state?
         sma = StateMachine(self.bpod)
 
         # NB: This state actually the inter-trial interval, i.e. the period of grey screen between stim off and stim on.
@@ -739,7 +744,7 @@ class HabituationChoiceWorldSession(ChoiceWorldSession):
         # the offset of this state is trial start!
         sma.add_state(
             state_name='iti',
-            state_timer=1,  # Stim off for 1 sec
+            state_timer=self.task_params.ITI_SECS,  # Stim off for 1 sec
             state_change_conditions={'Tup': 'stim_on'},
             output_actions=[self.bpod.actions.bonsai_hide_stim, ('BNC1', 255)],
         )
@@ -754,7 +759,7 @@ class HabituationChoiceWorldSession(ChoiceWorldSession):
 
         sma.add_state(
             state_name='stim_center',
-            state_timer=0.5,
+            state_timer=self.task_params.STIM_CENTER_TIME_SECS,
             state_change_conditions={'Tup': 'reward'},
             output_actions=[self.bpod.actions.bonsai_show_center],
         )
@@ -765,6 +770,20 @@ class HabituationChoiceWorldSession(ChoiceWorldSession):
             state_change_conditions={'Tup': 'post_reward'},
             output_actions=[('Valve1', 255), ('BNC1', 255)],
         )
+        #if self.task_params.REWARD_AMOUNT_UL > 0:
+        #    sma.add_state(
+        #        state_name='reward',
+        #        state_timer=self.reward_time,  # the length of time to leave reward valve open, i.e. reward size
+        #        state_change_conditions={'Tup': 'post_reward'},
+        #        output_actions=[('Valve1', 255), ('BNC1', 255)],
+        #    )
+        #else: # Dont open the valve if reward is zero
+        #    sma.add_state(
+        #        state_name='reward',
+        #        state_timer=self.reward_time,  # the length of time to leave reward valve open, i.e. reward size
+        #        state_change_conditions={'Tup': 'post_reward'},
+        #        output_actions=[('BNC1', 255)],
+        #    )
         # This state defines the period after reward where Bpod TTL is LOW.
         # NB: The stimulus is on throughout this period. The stim off trigger occurs upon exit.
         # The stimulus thus remains in the screen centre for 0.5 + ITI_DELAY_SECS seconds.
