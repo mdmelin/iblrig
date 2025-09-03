@@ -27,6 +27,7 @@ class Session(ChoiceWorldSession):
         duration_spontaneous: int = DEFAULTS['SPONTANEOUS_ACTIVITY_SECONDS'],
         skip_event_replay: bool = DEFAULTS['SKIP_EVENT_REPLAY'],
         num_stim_presentations: int = DEFAULTS['NUM_STIM_PRESENTATIONS'],
+        rf_map_seconds: int = DEFAULTS['RF_MAP_SECONDS'],
         **kwargs,
     ):
         self.extractor_tasks = ['PassiveRegisterRaw', 'PassiveTask']
@@ -42,6 +43,7 @@ class Session(ChoiceWorldSession):
         self.task_params['SPONTANEOUS_ACTIVITY_SECONDS'] = duration_spontaneous
         self.task_params['SKIP_EVENT_REPLAY'] = skip_event_replay
         self.task_params['NUM_STIM_PRESENTATIONS'] = num_stim_presentations
+        self.task_params['RF_MAP_SECONDS'] = rf_map_seconds
         if self.hardware_settings['MAIN_SYNC']:
             log.error('PassiveChoiceWorld extraction not supported for Bpod-only sessions!')
 
@@ -64,6 +66,14 @@ class Session(ChoiceWorldSession):
             default=DEFAULTS['SPONTANEOUS_ACTIVITY_SECONDS'],
             type=int,
             help=f'duration of spontaneous activity in seconds (default: {DEFAULTS["SPONTANEOUS_ACTIVITY_SECONDS"]} s)',
+        )
+        parser.add_argument(
+            '--rf_map_seconds',
+            option_strings=['--rf_map_seconds'],
+            dest='rf_map_seconds',
+            default=DEFAULTS['RF_MAP_SECONDS'],
+            type=int,
+            help=f'duration of rf mapping in seconds (default: {DEFAULTS["RF_MAP_SECONDS"]} s)',
         )
         parser.add_argument(
             '--skip_event_replay',
@@ -103,7 +113,8 @@ class Session(ChoiceWorldSession):
         self.trigger_bonsai_cameras()
 
         # Run the passive part i.e. spontaneous activity and RFMapping stim
-        self.run_passive_visual_stim(sa_time=timedelta(seconds=self.task_params['SPONTANEOUS_ACTIVITY_SECONDS']))
+        self.run_passive_visual_stim(sa_time=timedelta(seconds=self.task_params['SPONTANEOUS_ACTIVITY_SECONDS']),
+                                     map_time=timedelta(seconds=self.task_params['RF_MAP_SECONDS']))
 
         if self.task_params['SKIP_EVENT_REPLAY'] is True:
             log.info('Skipping replay of task events')
@@ -137,6 +148,7 @@ class Session(ChoiceWorldSession):
                 self.bonsai_visual_udp_client.send_message(r'/re', byte_show_stim)
                 time.sleep(0.3)  # todo: this is a very inaccurate way of controlling stim duration!
                 self.bonsai_visual_udp_client.send_message(r'/re', byte_hide_stim)
+            self.paths.SESSION_FOLDER.joinpath('transfer_me.flag').touch()
             if self.stopped:
                 break
 
