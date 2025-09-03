@@ -891,6 +891,7 @@ class RigWizard(QMainWindow, Ui_wizard):
                     widget.setDecimals(1)
                 else:
                     widget = QSpinBox()
+                widget.setMaximum(10_000)
                 if arg.default:
                     widget.setValue(arg.default)
                 widget.valueChanged.connect(lambda val, p=param: self._set_task_arg(p, str(val)))
